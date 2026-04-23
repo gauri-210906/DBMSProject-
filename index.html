@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Placement Management System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1a202c;
+    --muted: #718096;
+    --primary: #3b5bdb;
+    --primary-light: #eef2ff;
+    --success: #2f9e44;
+    --success-light: #ebfbee;
+    --warning: #e67700;
+    --warning-light: #fff9db;
+    --info: #1971c2;
+    --info-light: #e7f5ff;
+    --danger: #c92a2a;
+    --danger-light: #fff5f5;
+    --placed-bg: #d3f9d8;
+    --placed-color: #1a6b2a;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.04);
+    --radius: 10px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    background: var(--text);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .sidebar-logo h1 { color: #fff; font-size: 15px; font-weight: 700; letter-spacing: .3px; }
+  .sidebar-logo p { color: rgba(255,255,255,.4); font-size: 11px; margin-top: 2px; }
+
+  .sidebar nav { flex: 1; padding: 12px 10px; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: rgba(255,255,255,.55);
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: all .15s;
+    margin-bottom: 2px;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+  .nav-item.active { background: var(--primary); color: #fff; }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+  .main { margin-left: 220px; flex: 1; padding: 28px 32px; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header { margin-bottom: 24px; }
+  .page-header h2 { font-size: 22px; font-weight: 700; color: var(--text); }
+  .page-header p { color: var(--muted); font-size: 13.5px; margin-top: 3px; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .stat-card .label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+  .stat-card .value { font-size: 30px; font-weight: 700; margin-top: 6px; font-family: 'DM Mono', monospace; }
+  .stat-card.blue .value { color: var(--primary); }
+  .stat-card.green .value { color: var(--success); }
+  .stat-card.orange .value { color: var(--warning); }
+  .stat-card.info .value { color: var(--info); }
+  .stat-card.red .value { color: var(--danger); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .card-header h3 { font-size: 15px; font-weight: 600; }
+
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  input[type=text], input[type=email], input[type=number], input[type=tel], select {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border .15s;
+  }
+  input:focus, select:focus { border-color: var(--primary); background: #fff; }
+  input[type=text] { width: 200px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th {
+    padding: 11px 16px;
+    text-align: left;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--muted);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #fafbfc; }
+  tbody td { padding: 12px 16px; vertical-align: middle; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge::before { content: '●'; font-size: 8px; }
+
+  .badge-available { background: #f1f3f5; color: #495057; }
+  .badge-applied   { background: var(--info-light); color: var(--info); }
+  .badge-shortlisted { background: var(--warning-light); color: var(--warning); }
+  .badge-placed    { background: var(--placed-bg); color: var(--placed-color); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: #2f4ac8; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #247c36; }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid #fcc; font-size: 12px; padding: 5px 10px; }
+  .btn-danger:hover { background: var(--danger-light); }
+  .btn-sm { padding: 5px 11px; font-size: 12px; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    background: #fafbff;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .form-group input, .form-group select { width: 100%; }
+  .form-actions { padding: 14px 20px; background: #fafbff; border-bottom: 1px solid var(--border); display: flex; gap: 10px; }
+
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .overlay.open { display: flex; }
+
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 420px;
+    max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    overflow: hidden;
+    animation: slideUp .2s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+
+  .modal-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-header h3 { font-size: 16px; font-weight: 700; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; }
+
+  .modal-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+  .modal-body label { font-size: 12px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px; }
+  .modal-body select, .modal-body input { width: 100%; }
+
+  .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+  .warn-box {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #7d4e00;
+    display: none;
+  }
+  .warn-box.show { display: block; }
+
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--text);
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+    box-shadow: 0 6px 20px rgba(0,0,0,.2);
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all .25s;
+    z-index: 999;
+    max-width: 300px;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.success { background: var(--success); }
+  #toast.error { background: var(--danger); }
+
+  .empty-row td { text-align: center; color: var(--muted); padding: 32px !important; font-size: 13px; }
+  .company-tag { font-size: 11.5px; color: var(--primary); background: var(--primary-light); padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>📋 PlaceTrack</h1>
+      <p>Placement Management</p>
+    </div>
+    <nav>
+      <button class="nav-item active" onclick="showPage('dashboard')">
+        <span class="icon">🏠</span> Dashboard
+      </button>
+      <button class="nav-item" onclick="showPage('students')">
+        <span class="icon">🎓</span> Students
+      </button>
+      <button class="nav-item" onclick="showPage('companies')">
+        <span class="icon">🏢</span> Companies
+      </button>
+      <button class="nav-item" onclick="showPage('placements')">
+        <span class="icon">✅</span> Placements
+      </button>
+    </nav>
+  </aside>
+
+  <main class="main">
+
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>Overview of placement activity</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="label">Total Students</div><div class="value" id="stat-students">—</div></div>
+        <div class="stat-card green"><div class="label">Placed</div><div class="value" id="stat-placed">—</div></div>
+        <div class="stat-card orange"><div class="label">Shortlisted</div><div class="value" id="stat-shortlisted">—</div></div>
+        <div class="stat-card info"><div class="label">Applied</div><div class="value" id="stat-applied">—</div></div>
+        <div class="stat-card red"><div class="label">Companies</div><div class="value" id="stat-companies">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Recent Placements</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Student</th><th>Branch</th><th>Company</th><th>Package (LPA)</th><th>Placed On</th></tr></thead>
+            <tbody id="recent-placements-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-students" class="page">
+      <div class="page-header">
+        <h2>Students</h2>
+        <p>Manage student records and track their placement status</p>
+      </div>
+      <div class="card">
+        <div class="form-grid">
+          <div class="form-group"><label>Full Name*</label><input id="s-name" type="text" placeholder="Rahul Sharma"></div>
+          <div class="form-group"><label>Branch*</label>
+            <select id="s-branch">
+              <option value="">Select branch</option>
+              <option>CSE</option><option>IT</option><option>ECE</option>
+              <option>MECH</option><option>CIVIL</option><option>EEE</option>
+            </select>
+          </div>
+          <div class="form-group"><label>CGPA</label><input id="s-cgpa" type="number" step=".01" min="0" max="10" placeholder="8.5"></div>
+          <div class="form-group"><label>Email</label><input id="s-email" type="email" placeholder="student@example.com"></div>
+          <div class="form-group"><label>Phone</label><input id="s-phone" type="tel" placeholder="9876543210"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="addStudent()">＋ Add Student</button>
+          <button class="btn btn-outline" onclick="clearForm('s')">Clear</button>
+        </div>
+
+        <div class="card-header">
+          <h3>All Students</h3>
+          <div class="controls">
+            <input type="text" id="search-students" placeholder="🔍 Search name / email…" oninput="renderStudents()">
+            <select id="filter-branch" onchange="renderStudents()">
+              <option value="">All Branches</option>
+              <option>CSE</option><option>IT</option><option>ECE</option>
+              <option>MECH</option><option>CIVIL</option><option>EEE</option>
+            </select>
+            <select id="filter-status" onchange="renderStudents()">
+              <option value="">All Status</option>
+              <option value="available">Available</option>
+              <option value="applied">Applied</option>
+              <option value="shortlisted">Shortlisted</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th>Branch</th><th>CGPA</th>
+                <th>Email</th><th>Phone</th>
+                <th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="students-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-companies" class="page">
+      <div class="page-header">
+        <h2>Companies</h2>
+        <p>Manage recruiting companies</p>
+      </div>
+      <div class="card">
+        <div class="form-grid">
+          <div class="form-group"><label>Company Name*</label><input id="c-name" type="text" placeholder="Google"></div>
+          <div class="form-group"><label>Domain</label><input id="c-domain" type="text" placeholder="IT Services"></div>
+          <div class="form-group"><label>Package (LPA)</label><input id="c-package" type="number" step=".1" placeholder="12.0"></div>
+          <div class="form-group"><label>Openings</label><input id="c-openings" type="number" placeholder="5"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="addCompany()">＋ Add Company</button>
+          <button class="btn btn-outline" onclick="clearForm('c')">Clear</button>
+        </div>
+        <div class="card-header">
+          <h3>All Companies</h3>
+          <div class="controls">
+            <input type="text" id="search-companies" placeholder="🔍 Search company…" oninput="renderCompanies()">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Company</th><th>Domain</th><th>Package (LPA)</th><th>Openings</th><th>Actions</th></tr></thead>
+            <tbody id="companies-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-placements" class="page">
+      <div class="page-header">
+        <h2>Placements</h2>
+        <p>Students who have been confirmed placed</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Placed Students</h3>
+          <div class="controls">
+            <input type="text" id="search-placements" placeholder="🔍 Search student / company…" oninput="renderPlacements()">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Student</th><th>Branch</th><th>Email</th><th>CGPA</th><th>Company</th><th>Package (LPA)</th><th>Placed On</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="placements-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="overlay" id="status-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Update Student Status</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label>Student</label>
+        <div id="modal-student-name" style="font-size:15px;font-weight:700;color:var(--text)"></div>
+      </div>
+      <div>
+        <label>New Status</label>
+        <select id="modal-status" onchange="onStatusChange()">
+          <option value="available">Available</option>
+          <option value="applied">Applied</option>
+          <option value="shortlisted">Shortlisted</option>
+          <option value="placed">✅ Placed (will remove from Students)</option>
+        </select>
+      </div>
+      <div id="modal-company-group">
+        <label>Company Name</label>
+        <input id="modal-company" type="text" placeholder="e.g. TCS, Google…">
+      </div>
+      <div id="modal-package-group" style="display:none">
+        <label>Package Offered (LPA)</label>
+        <input id="modal-package" type="number" step=".1" placeholder="e.g. 12.5">
+      </div>
+      <div class="warn-box" id="modal-warn">
+        ⚠️ Marking as <strong>Placed</strong> will <strong>permanently remove</strong> this student from the Students table and add them to the Placements list.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStatus()">Save Status</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = 'http://localhost:3000/api';
+
+let students = [], companies = [], placements = [];
+let modalStudentId = null;
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item')[
+    ['dashboard','students','companies','placements'].indexOf(name)
+  ].classList.add('active');
+
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'students')  loadStudents();
+  if (name === 'companies') loadCompanies();
+  if (name === 'placements') loadPlacements();
+}
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  setTimeout(() => el.className = '', 3000);
+}
+
+async function loadDashboard() {
+  const [stats, pls] = await Promise.all([
+    fetch(`${API}/stats`).then(r => r.json()),
+    fetch(`${API}/placements`).then(r => r.json())
+  ]);
+  document.getElementById('stat-students').textContent    = stats.totalStudents ?? '—';
+  document.getElementById('stat-placed').textContent      = stats.totalPlaced ?? '—';
+  document.getElementById('stat-shortlisted').textContent = stats.shortlisted ?? '—';
+  document.getElementById('stat-applied').textContent     = stats.applied ?? '—';
+  document.getElementById('stat-companies').textContent   = stats.totalCompanies ?? '—';
+
+  const tbody = document.getElementById('recent-placements-body');
+  const recent = pls.slice(0, 8);
+  tbody.innerHTML = recent.length ? recent.map(p => `
+    <tr>
+      <td><strong>${p.student_name}</strong></td>
+      <td>${p.branch || '—'}</td>
+      <td><span class="company-tag">${p.company_name}</span></td>
+      <td>₹${p.package || 0} LPA</td>
+      <td>${new Date(p.placed_on).toLocaleDateString('en-IN')}</td>
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="5">No placements yet</td></tr>`;
+}
+
+async function loadStudents() {
+  students = await fetch(`${API}/students`).then(r => r.json());
+  renderStudents();
+}
+
+function renderStudents() {
+  const q      = document.getElementById('search-students').value.toLowerCase();
+  const branch = document.getElementById('filter-branch').value;
+  const status = document.getElementById('filter-status').value;
+
+  const filtered = students.filter(s =>
+    (!q || s.name.toLowerCase().includes(q) || (s.email||'').toLowerCase().includes(q)) &&
+    (!branch || s.branch === branch) &&
+    (!status || s.status === status)
+  );
+
+  const tbody = document.getElementById('students-body');
+  tbody.innerHTML = filtered.length ? filtered.map(s => `
+    <tr>
+      <td><strong>${s.name}</strong></td>
+      <td>${s.branch}</td>
+      <td>${s.cgpa ?? '—'}</td>
+      <td>${s.email || '—'}</td>
+      <td>${s.phone || '—'}</td>
+      <td>
+        <span class="badge badge-${s.status}">${capitalize(s.status)}</span>
+        ${s.applied_company ? `<br><small style="color:var(--muted);font-size:11px;">@ ${s.applied_company}</small>` : ''}
+      </td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-sm btn-outline" onclick="openModal(${s.id})">✏️ Status</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id})">🗑 Delete</button>
+      </td>
+    </tr>`).join('') :
+    `<tr class="empty-row"><td colspan="7">No students found</td></tr>`;
+}
+
+async function addStudent() {
+  const name   = document.getElementById('s-name').value.trim();
+  const branch = document.getElementById('s-branch').value;
+  const cgpa   = document.getElementById('s-cgpa').value;
+  const email  = document.getElementById('s-email').value.trim();
+  const phone  = document.getElementById('s-phone').value.trim();
+  if (!name || !branch) return toast('Name and branch are required', 'error');
+
+  const res = await fetch(`${API}/students`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ name, branch, cgpa, email, phone })
+  }).then(r => r.json());
+
+  if (res.error) return toast(res.error, 'error');
+  toast('Student added ✅');
+  clearForm('s');
+  loadStudents();
+}
+
+async function deleteStudent(id) {
+  if (!confirm('Delete this student?')) return;
+  await fetch(`${API}/students/${id}`, { method: 'DELETE' });
+  toast('Student deleted');
+  loadStudents();
+}
+
+function openModal(id) {
+  const s = students.find(x => x.id === id);
+  modalStudentId = id;
+  document.getElementById('modal-student-name').textContent = s.name;
+  document.getElementById('modal-status').value = s.status || 'available';
+  document.getElementById('modal-company').value = s.applied_company || '';
+  document.getElementById('modal-package').value = '';
+  onStatusChange();
+  document.getElementById('status-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('status-modal').classList.remove('open');
+  modalStudentId = null;
+}
+
+function onStatusChange() {
+  const v = document.getElementById('modal-status').value;
+  const compGrp = document.getElementById('modal-company-group');
+  const pkgGrp  = document.getElementById('modal-package-group');
+  const warn    = document.getElementById('modal-warn');
+
+  compGrp.style.display = (v !== 'available') ? 'block' : 'none';
+  pkgGrp.style.display  = (v === 'placed') ? 'block' : 'none';
+  warn.classList.toggle('show', v === 'placed');
+}
+
+async function saveStatus() {
+  const status  = document.getElementById('modal-status').value;
+  const company = document.getElementById('modal-company').value.trim();
+  const pkg     = document.getElementById('modal-package').value;
+
+  if ((status === 'applied' || status === 'shortlisted') && !company)
+    return toast('Please enter a company name', 'error');
+  if (status === 'placed' && !company)
+    return toast('Please enter the company name for placement', 'error');
+
+  const res = await fetch(`${API}/students/${modalStudentId}/status`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ status, company_name: company, package: pkg })
+  }).then(r => r.json());
+
+  if (res.error) return toast(res.error, 'error');
+  toast(res.message || 'Status updated ✅');
+  closeModal();
+  loadStudents();
+  if (status === 'placed') loadDashboard();
+}
+
+async function loadCompanies() {
+  companies = await fetch(`${API}/companies`).then(r => r.json());
+  renderCompanies();
+}
+
+function renderCompanies() {
+  const q = document.getElementById('search-companies').value.toLowerCase();
+  const filtered = companies.filter(c =>
+    !q || c.name.toLowerCase().includes(q) || (c.domain||'').toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('companies-body');
+  tbody.innerHTML = filtered.length ? filtered.map(c => `
+    <tr>
+      <td><strong>${c.name}</strong></td>
+      <td>${c.domain || '—'}</td>
+      <td>₹${c.package || 0} LPA</td>
+      <td>${c.openings}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteCompany(${c.id})">🗑 Delete</button></td>
+    </tr>`).join('') :
+    `<tr class="empty-row"><td colspan="5">No companies found</td></tr>`;
+}
+
+async function addCompany() {
+  const name     = document.getElementById('c-name').value.trim();
+  const domain   = document.getElementById('c-domain').value.trim();
+  const pkg      = document.getElementById('c-package').value;
+  const openings = document.getElementById('c-openings').value;
+  if (!name) return toast('Company name is required', 'error');
+
+  const res = await fetch(`${API}/companies`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ name, domain, package: pkg, openings })
+  }).then(r => r.json());
+
+  if (res.error) return toast(res.error, 'error');
+  toast('Company added ✅');
+  clearForm('c');
+  loadCompanies();
+}
+
+async function deleteCompany(id) {
+  if (!confirm('Delete this company?')) return;
+  await fetch(`${API}/companies/${id}`, { method: 'DELETE' });
+  toast('Company deleted');
+  loadCompanies();
+}
+
+async function loadPlacements() {
+  placements = await fetch(`${API}/placements`).then(r => r.json());
+  renderPlacements();
+}
+
+function renderPlacements() {
+  const q = document.getElementById('search-placements').value.toLowerCase();
+  const filtered = placements.filter(p =>
+    !q || p.student_name.toLowerCase().includes(q) || p.company_name.toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('placements-body');
+  tbody.innerHTML = filtered.length ? filtered.map(p => `
+    <tr>
+      <td><strong>${p.student_name}</strong></td>
+      <td>${p.branch || '—'}</td>
+      <td>${p.email || '—'}</td>
+      <td>${p.cgpa ?? '—'}</td>
+      <td><span class="company-tag">${p.company_name}</span></td>
+      <td>₹${p.package || 0} LPA</td>
+      <td>${new Date(p.placed_on).toLocaleDateString('en-IN')}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deletePlacement(${p.id})">🗑</button></td>
+    </tr>`).join('') :
+    `<tr class="empty-row"><td colspan="8">No placements yet</td></tr>`;
+}
+
+async function deletePlacement(id) {
+  if (!confirm('Remove this placement record?')) return;
+  await fetch(`${API}/placements/${id}`, { method: 'DELETE' });
+  toast('Placement record removed');
+  loadPlacements();
+}
+
+function clearForm(prefix) {
+  ['name','branch','cgpa','email','phone','domain','package','openings'].forEach(f => {
+    const el = document.getElementById(prefix + '-' + f);
+    if (el) el.value = '';
+  });
+}
+
+function capitalize(str) {
+  if (!str) return '—';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
